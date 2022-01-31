@@ -1,0 +1,206 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+packages.used=c("rvest", "tibble", 
+                "sentimentr", "gplots", "dplyr",
+                "tm", "syuzhet", "factoextra", 
+                "beeswarm", "scales", "RColorBrewer",
+                "RANN", "topicmodels", "stringr")
+# check packages that need to be installed.
+packages.needed=setdiff(packages.used, 
+                        intersect(installed.packages()[,1], 
+                                  packages.used))
+# install additional packages
+if(length(packages.needed)>0){
+  install.packages(packages.needed, dependencies = TRUE)
+}
+# load packages
+library("rvest")
+library("tibble")
+library("syuzhet")
+library("sentimentr")
+library("gplots")
+library("dplyr")
+library("tm")
+library("syuzhet")
+library("factoextra")
+library("beeswarm")
+library("scales")
+library("RColorBrewer")
+library("RANN")
+library("tm")
+library("topicmodels")
+library("stringr")
+source("../lib/plotstacked.R")
+source("../lib/speechFuncs.R")
+```
+
+```{r}
+phil <- read.csv("philosophy_data.csv")
+```
+
+
+```{r}
+sentence.list <- phil$sentence_str
+sentence.list=NULL
+
+for (i in 1:length(sentence.list)){
+  
+}
+
+for(i in 1:nrow(speech.list)){
+  sentences=syuzhet::get_sentences(speech.list$fulltext[i])
+  if(length(sentences)>0){
+    emotions=matrix(emotion(sentences)$emotion, 
+                    nrow=length(sentences), 
+                    byrow=T)
+    colnames(emotions)=emotion(sentences[1])$emotion_type
+    emotions=data.frame(emotions)
+    emotions=select(emotions,
+                   anticipation,
+                   joy, 
+                   surprise, 
+                   trust, 
+                   anger, 
+                   disgust, 
+                   fear, 
+                   sadness)
+    word.count=f.word_count(sentences)
+    # colnames(emotions)=paste0("emo.", colnames(emotions))
+    # in case the word counts are zeros?
+    # emotions=diag(1/(word.count+0.01))%*%as.matrix(emotions)
+    sentence.list=rbind(sentence.list, 
+                        cbind(speech.list[i,-ncol(speech.list)],
+                              sentences=as.character(sentences), 
+                              word.count,
+                              emotions,
+                              sent.id=1:length(sentences)
+                              )
+    )
+  }
+}
+names(sentence.list)
+```
+
+```{r}
+downloads <- rbind(
+  
+  c("The Prince", "Machiavelli", 14217),
+  c("The Republic", "Plato", 8856 ),
+  c("Second Treatise of Government", "Locke",6860),
+  c("Beyond Good and Evil", "Nietzsche", 6427),
+  c("Thus Spake Zarathustra: A Book for All and None", "Nietzsche", 5276),
+  c("Tractatus Logico-Philosophicus", "Wittgenstein", 5094),
+  c("The Communist Manifesto","Marx", 4631),
+  c("The Problems of Philosophy", "Russell", 4138),
+  c("On Liberty","Mill", 3526 ),
+  c("Democracy and Education: An Introduction to the Philosophy of Education","Dewey",2878),
+  c("The Critique of Pure Reason","Kant",2449 ),
+  c("The Poetics of Aristotle","Aristotle",2422 ),
+  c("Ethics","Spinoza",2290 ),
+  c("The Antichrist","Nietzsche",1765),
+  c("Apology","Plato",1655 ),
+  c("An Enquiry Concerning Human Understanding","Hume",1598 ),
+  c("Discourse on the Method of Rightly Conducting One's Reason and of Seeking Truth in the Sciences","Descartes",1552 ),
+  c("Euthyphro","Plato",1423 ),
+  c("Utilitarianism","Mill",1349 ),
+  c("A Treatise of Human Nature","Hume",1260 ),
+  c("The Ethics of Aristotle","Aristotle",1236 ),
+  c("Theaetetus","Plato",988),
+  c("Also sprach Zarathustra: Ein Buch für Alle und Keinen (German)","Nietzsche",984 ),
+  c("The Analysis of Mind","Russell",823 ),
+  c("An Enquiry Concerning the Principles of Morals","Hume",785),
+  c("Politics: A Treatise on Government","Aristotle",652 ),
+  c("Mysticism and Logic and Other Essays", "Russell",535 ),
+  c("Laughter: An Essay on the Meaning of the Comic","Bergson",528 ),
+  c("Considerations on Representative Government","Mill",516 ),
+  c("Ion","Plato",495 ),
+  c("Dialogues Concerning Natural Religion","Hume",479 ),
+  c("Symbolic Logic","Carroll",462 ),
+  c("Kritik der reinen Vernunft (German)","Kant",414 ),
+  c("The Case of Wagner, Nietzsche Contra Wagner, and Selected Aphorisms.","Nietzsche",367 ),
+  c("Aesthetical Essays of Friedrich Schiller","Schiller",339 ),
+  c("Our Knowledge of the External World as a Field for Scientific Method in Philosophy","Russell",331 ),
+  c("The Game of Logic","Carroll",323 ),
+  c("Aristotle on the art of poetry","Aristotle",319 ),
+  c("A Treatise Concerning the Principles of Human Knowledge","Berkeley",290 ),
+  c("A System of Logic, Ratiocinative and Inductive","Mill",273 ),
+  c("The Categories","Aristotle",272 ),
+  c("Theologico-Political Treatise — Part 1","Spinoza",258 ),
+  c("Moral Principles in Education","Dewey",253 ),
+  c("Discours de la méthode (French)","Descartes",249),
+  c("A System of Logic, Ratiocinative and Inductive (Vol. 1 of 2)","Mill",249),
+  c("A History of Indian Philosophy, Volume 1","Dasgupta",247 ),
+  c("Ontology, or the Theory of Being","Coffey",225 ),
+  c("On the Improvement of the Understanding","Spinoza",219 ),
+  c("A Guide to Stoicism","Stock",219 ),
+  c("Proposed Roads to Freedom","Russell",207 ),
+  c("Three Dialogues Between Hylas and Philonous in Opposition to Sceptics and Atheists","Berkeley",205),
+  c("Kritik der reinen Vernunft (German)","Kant",203 ),
+  c("Autobiography","Mill",197 ),
+  c("Political Ideals","Russell",189 ),
+  c("Logic: Deductive and Inductive","Read",159 ),
+  c("An Introduction to Philosophy", "Fullerton", 154),
+  c("Die Geburt der Tragödie: Versuch einer Selbstkritik (German)","Nietzsche",150 ),
+  c("The Religion of the Samurai","Nukariya",146 ),
+  c("Selections from the Principles of Philosophy","Descartes",143 ),
+  c("Essays in Radical Empiricism","James",139 ),
+  c("A Pluralistic Universe","James",136),
+  c("Sextus Empiricus and Greek Scepticism","Mills Patrick",110 ),
+  c("History of Modern Philosophy","Falckenberg",98),
+  c("Auguste Comte and Positivism","Mill",98 ),
+  c("Some Turns of Thought in Modern Philosophy: Five Essays","Santayana",96 ),
+  c("An Introduction to the Philosophy of Law","Pound",95 ),
+  c("Ethics — Part 1","Spinoza",73),
+  c("Essays Towards a Theory of Knowledge","Philip",71 ),
+  c("The Philosophy of Despair","Jordan",71 ),
+  c("A System of Logic: Ratiocinative and Inductive, 7th Edition, Vol. II","Mill",70),
+  c("Homer and Classical Philology","Nietzsche",69 ),
+  c("Philosophical Letters of Friedrich Schiller","Schiller",67 ),
+  c("The Psychology of Nations","Partridge",66 ),
+  c("Logic, Inductive and Deductive","Minto",65 ),
+  c("The Theological Tractates and The Consolation of Philosophy (Latin)","Boethius",64 ),
+  c("Theologico-Political Treatise — Part 2", "Spinoza",62 ),
+  c("A Theological-Political Treatise [Part III]","Spinoza",56 ),
+  c("Bacon", "Church",55 ),
+  c("A System of Logic: Ratiocinative and Inductive, 7th Edition, Vol. I","Mill",54 ),
+  c("Introduction to the Philosophy and Writings of Plato","Taylor",54 ),
+  c("The Philosophy of the Moral Feelings","Abercrombie",54 ),
+  c("A Short History of Greek Philosophy","Marshall",53 ),
+  c("Jewish History : An Essay in the Philosophy of History","Dubnow",53 ),
+  c("A Theological-Political Treatise [Part IV]","Spinoza",51 ),
+  c("Essays on some unsettled Questions of Political Economy","Mill",50 ),
+  c("Initiation into Philosophy","Faguet",49 ),
+  c("Deductive Logic","Stock",49 ),
+  c("Analysis of Mr. Mill's System of Logic","Stebbing",48 ),
+  c("A New Philosophy: Henri Bergson","Le Roy",47 ),
+  c("Lectures on the true, the beautiful and the good","Cousin",46 ),
+  c("Mind and Motion and Monism","Romanes",44 ),
+  c("The Principles of Aesthetics","Parker",44 ),
+  c("Ethics — Part 3","Spinoza",43 ),
+  c("Bergson and His Philosophy","Gunn",41 ),
+  c("Ethics — Part 4","Spinoza",38 ),
+  c("Ethics — Part 5","Spinoza",37 ),
+  c("Rudolph Eucken : a philosophy of life","Jones",36 ),
+  c("Review of the Work of Mr John Stuart Mill Entitled, 'Examination of Sir William Hamilton's Philosophy.'","Grote",36 ),
+  c("Ethics — Part 2","Spinoza",34 ),
+  c("Philosophy and Religion","Rashdall",34 ),
+  c("The English Utilitarians, Volume 1 (of 3)","Stephen",33 ),
+  c("An Interpretation of Rudolf Eucken's Philosophy","Jones",32 ),
+  c("Modern French Philosophy: a Study of the Development Since Comte","Gunn",31 ),
+  c("Burke","Morley",29 ),
+  c("The Approach to Philosophy","Perry",28 ),
+  c("Achtundvierzig Briefe von Johann Gottlieb Fichte und seinen Verwandten (German)","Fichte",21 ),
+  c("Critical Miscellanies (Vol. 3 of 3), Essay 10: Auguste Comte","Morley",20 ),
+  c("Critical Miscellanies, (Vol. 3 of 3), Essay 2: The Death of Mr Mill; Essay 3: Mr Mill's Autobiography","Morley",19 )
+)
+
+downloads <- data.frame(downloads)
+colnames(downloads) <- c("Title", "Author", "downloads")
+downloads$downloads <- as.integer(downloads$downloads)
+```
+
+Mind and body. Cartesian - duality between mind and body. justice, good, mind. male vs female, feminism - wollstonecraft. naturalism. religion, god. Daeontolgy and consequentialsm. location. free will. society vs self. females focused more on society
