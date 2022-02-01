@@ -8,7 +8,7 @@ packages.used=c("rvest", "tibble",
                 "sentimentr", "gplots", "dplyr",
                 "tm", "syuzhet", "factoextra", 
                 "beeswarm", "scales", "RColorBrewer",
-                "RANN", "topicmodels", "stringr")
+                "RANN", "topicmodels", "stringr","plyr")
 # check packages that need to be installed.
 packages.needed=setdiff(packages.used, 
                         intersect(installed.packages()[,1], 
@@ -23,6 +23,7 @@ library("tibble")
 library("syuzhet")
 library("sentimentr")
 library("gplots")
+library("plyr")
 library("dplyr")
 library("tm")
 library("syuzhet")
@@ -34,56 +35,133 @@ library("RANN")
 library("tm")
 library("topicmodels")
 library("stringr")
+
+
 source("../lib/plotstacked.R")
 source("../lib/speechFuncs.R")
 ```
 
 ```{r}
-phil <- read.csv("philosophy_data.csv")
+phil <- read.csv("../data/philosophy_data.csv")
+sentence.list <- phil
+```
+
+```{r}
+my.add.index <- function(df){
+  df$sent.id <- 1:nrow(df)
+  return(df)
+}
+sentence.list <- ddply(sentence.list,.(title),my.add.index)
 ```
 
 
 ```{r}
-sentence.list <- phil$sentence_str
-sentence.list=NULL
-
-for (i in 1:length(sentence.list)){
-  
-}
-
-for(i in 1:nrow(speech.list)){
-  sentences=syuzhet::get_sentences(speech.list$fulltext[i])
-  if(length(sentences)>0){
-    emotions=matrix(emotion(sentences)$emotion, 
-                    nrow=length(sentences), 
-                    byrow=T)
-    colnames(emotions)=emotion(sentences[1])$emotion_type
-    emotions=data.frame(emotions)
-    emotions=select(emotions,
-                   anticipation,
-                   joy, 
-                   surprise, 
-                   trust, 
-                   anger, 
-                   disgust, 
-                   fear, 
-                   sadness)
-    word.count=f.word_count(sentences)
-    # colnames(emotions)=paste0("emo.", colnames(emotions))
-    # in case the word counts are zeros?
-    # emotions=diag(1/(word.count+0.01))%*%as.matrix(emotions)
-    sentence.list=rbind(sentence.list, 
-                        cbind(speech.list[i,-ncol(speech.list)],
-                              sentences=as.character(sentences), 
-                              word.count,
-                              emotions,
-                              sent.id=1:length(sentences)
-                              )
-    )
-  }
-}
-names(sentence.list)
+corpus.list=sentence.list[2:(nrow(sentence.list)-1), ]
+sentence.pre=sentence.list$sentence_str[1:(nrow(sentence.list)-2)]
+sentence.post=sentence.list$sentence_str[3:(nrow(sentence.list)-1)]
+corpus.list$snipets=paste(sentence.pre, corpus.list$sentences, sentence.post, sep=" ")
+rm.rows=(1:nrow(corpus.list))[corpus.list$sent.id==1]
+rm.rows=c(rm.rows, rm.rows-1)
+corpus.list=corpus.list[-rm.rows, ]
 ```
+
+## Text mining
+```{r}
+docs <- Corpus(VectorSource(corpus.list$snipets))
+writeLines(as.character(docs[[sample(1:nrow(corpus.list), 1)]]))
+```
+
+### Text basic processing
+Adapted from <https://eight2late.wordpress.com/2015/09/29/a-gentle-introduction-to-topic-modeling-using-r/>.
+
+```{r}
+#remove potentially problematic symbols
+docs <-tm_map(docs,content_transformer(tolower))
+writeLines(as.character(docs[[sample(1:nrow(corpus.list), 1)]]))
+
+#remove punctuation
+docs <- tm_map(docs, removePunctuation)
+writeLines(as.character(docs[[sample(1:nrow(corpus.list), 1)]]))
+
+#Strip digits
+docs <- tm_map(docs, removeNumbers)
+writeLines(as.character(docs[[sample(1:nrow(corpus.list), 1)]]))
+
+#remove stopwords
+docs <- tm_map(docs, removeWords, stopwords("english"))
+writeLines(as.character(docs[[sample(1:nrow(corpus.list), 1)]]))
+
+#remove whitespace
+docs <- tm_map(docs, stripWhitespace)
+writeLines(as.character(docs[[sample(1:nrow(corpus.list), 1)]]))
+
+#Stem document
+docs <- tm_map(docs,stemDocument)
+writeLines(as.character(docs[[sample(1:nrow(corpus.list), 1)]]))
+```
+
+### Topic modeling
+
+Gengerate document-term matrices. 
+
+```{r}
+dtm <- DocumentTermMatrix(docs)
+#convert rownames to filenames#convert rownames to filenames
+rownames(dtm) <- paste(corpus.list$author, corpus.list$title,
+                       corpus.list$sent.id, sep="_")
+
+#Find the sum of words in each Document
+rowTotals <- rep(NA, nrow(dtm))
+
+start_time <- Sys.time()
+rowTotals <- apply(dtm[1:10000,],1,sum)
+end_time <- Sys.time()
+end_time - start_time
+
+
+for (i in 1:nrow(dtm)){
+  rowTotals[i] <- sum(dtm[i,])
+}
+
+dtm  <- dtm[rowTotals> 0, ]
+corpus.list=corpus.list[rowTotals>0, ]
+
+```
+
+Run LDA
+
+```{r}
+#Set parameters for Gibbs sampling
+burnin <- 4000
+iter <- 2000
+thin <- 500
+seed <-list(2003,5,63,100001,765)
+nstart <- 5
+best <- TRUE
+
+#Number of topics
+k <- 8
+
+#Run LDA using Gibbs sampling
+ldaOut <-LDA(dtm, k, method="Gibbs", control=list(nstart=nstart, 
+                                                 seed = seed, best=best,
+                                                 burnin = burnin, iter = iter, 
+                                                 thin=thin))
+#write out results
+#docs to topics
+ldaOut.topics <- as.matrix(topics(ldaOut))
+table(c(1:k, ldaOut.topics))
+write.csv(ldaOut.topics,file=paste("../out/LDAGibbs",k,"DocsToTopics.csv"))
+
+#top 6 terms in each topic
+ldaOut.terms <- as.matrix(terms(ldaOut,20))
+write.csv(ldaOut.terms,file=paste("../out/LDAGibbs",k,"TopicsToTerms.csv"))
+
+#probabilities associated with each topic assignment
+topicProbabilities <- as.data.frame(ldaOut@gamma)
+write.csv(topicProbabilities,file=paste("../out/LDAGibbs",k,"TopicProbabilities.csv"))
+```
+
 
 ```{r}
 downloads <- rbind(
@@ -202,5 +280,10 @@ downloads <- data.frame(downloads)
 colnames(downloads) <- c("Title", "Author", "downloads")
 downloads$downloads <- as.integer(downloads$downloads)
 ```
+
+```{r}
+phil %>% group_by(title, author) %>% summarize(s = n())
+```
+
 
 Mind and body. Cartesian - duality between mind and body. justice, good, mind. male vs female, feminism - wollstonecraft. naturalism. religion, god. Daeontolgy and consequentialsm. location. free will. society vs self. females focused more on society
