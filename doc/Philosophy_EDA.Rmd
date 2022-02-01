@@ -42,9 +42,26 @@ source("../lib/speechFuncs.R")
 ```
 
 ```{r}
-phil <- read.csv("../data/philosophy_data.csv")
-sentence.list <- phil
+sentence.list <- read.csv("../data/philosophy_data.csv")
 ```
+
+```{r}
+sort(unique(sentence.list$author))
+
+unique(sentence.list$title[sentence.list$author=="Kant"])
+
+unique(sentence.list[,c('author','school')])[unique(sentence.list[,c('author','school')])$school %in% c("communism","capitalism"),]
+```
+
+```{r}
+commcap <- c("communism","capitalism")
+commcap <- c("empiricism","rationalism")
+
+sentence.list.commcap <- sentence.list %>% filter(school %in% commcap)
+
+```
+
+
 
 ```{r}
 my.add.index <- function(df){
@@ -286,4 +303,8 @@ phil %>% group_by(title, author) %>% summarize(s = n())
 ```
 
 
-Mind and body. Cartesian - duality between mind and body. justice, good, mind. male vs female, feminism - wollstonecraft. naturalism. religion, god. Daeontolgy and consequentialsm. location. free will. society vs self. females focused more on society
+Mind and body. Cartesian - duality between mind and body. justice, good, mind. male vs female, feminism - wollstonecraft. naturalism. religion, god. Deontolgy and consequentialsm. location. free will. society vs self. females focused more on society
+
+good
+harm
+action
