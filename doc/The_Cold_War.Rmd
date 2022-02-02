@@ -169,7 +169,10 @@ capitalism_text_wordcounts_top_10 <- capitalism_text_wordcounts[1:10,]
 ```{r}
 freq_plot_communism <- ggplot(communism_text_wordcounts_top_10, aes(x = reorder(word, -n), y = n)) + geom_bar(stat = "identity",fill="darkred") + xlab("Word") + ylab("Frequency") + ggtitle("Top 10 Most Frequent Words in Communism")+theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylim(c(0,3500)) + theme(plot.title = element_text(size = 10.5))
 freq_plot_capitalism <- ggplot(capitalism_text_wordcounts_top_10, aes(x = reorder(word, -n), y = n)) + geom_bar(stat = "identity",fill="darkblue")+ xlab("Word") + ylab("Frequency") + ggtitle("Top 10 Most Frequent Words in Capitalism")+theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylim(c(0,3500))+ theme(plot.title = element_text(size = 11))
-grid.arrange(freq_plot_communism, freq_plot_capitalism, ncol=2)
+freq_arranged <- grid.arrange(freq_plot_communism, freq_plot_capitalism, ncol=2)
+
+ggsave("../figs/frequency_plot_communism.jpg", width = 7.29, height = 4.5, plot = freq_plot_communism)
+ggsave("../figs/frequency_plot_capitalism.jpg", width = 7.29, height = 4.5, plot = freq_plot_capitalism)
 ```
 
 The plot above shows the top 10 most common words in books on communism and capitalism respectively. Both schools seem to use words related to money and manufacturing. However, communism includes a few words related to society while capitalism includes words related to the financial market. While it's hard to infer much from 10 words alone, this gives us a preliminary idea of what to expect from a deeper dive.
@@ -391,7 +394,8 @@ topic.plot=c(1:8)
 #topic.summary
 
 # JPEG device
-jpeg(file = "../output/heatmap_author_by_topic.jpeg")
+
+jpeg(file = "../figs/heatmap_author_by_topic.jpeg")
 
 # Code
 heatmap.2(as.matrix(topic.summary[,topic.plot+1]), 
@@ -399,7 +403,7 @@ heatmap.2(as.matrix(topic.summary[,topic.plot+1]),
           col = colorpanel(100, "white", "lightgreen", "darkgreen"),
           cexRow = 1, cexCol = 1, margins = c(8,8),
           trace = "none", density.info = "none",
-          main = "Heatmap of Topics by Author")
+          main = "Heatmap - Darker is Stronger")
 
 # Close device
 trash <- dev.off()
