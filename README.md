@@ -17,7 +17,12 @@ Term: Spring 2022
 
 To reproduce this project:
 
-1. Download the [dataset](https://www.kaggle.com/kouroshalizadeh/history-of-philosophy) to the data folder. 
+1. Download the [dataset](https://www.kaggle.com/kouroshalizadeh/history-of-philosophy) to the [data](./data) folder. 
+
+2. Run the [RMarkdown Notebook](./doc/The_Cold_War.Rmd)
+
++ For faster runtime, knit the .Rmd file as is.
++ To create all objects from scratch, remove all instances of `eval=F`. Warning: Runtime will be large.
 
 Following [suggestions](http://nicercode.github.io/blog/2013-04-05-projects/) by [RICH FITZJOHN](http://nicercode.github.io/about/#Team) (@richfitz). This folder is orgarnized as follows.
 
