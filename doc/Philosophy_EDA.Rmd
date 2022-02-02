@@ -132,7 +132,10 @@ writeLines(as.character(docs[[index]]))
 
 Generate document-term matrices. 
 
-```{r}
+```{r, eval=F}
+# WARNING: TIME INTENSIVE CHUNK. DO NOT RUN THIS CHUNK FOR EVALUATION
+# THE REQUIRED OUTPUTS ARE SAVED IN OUTPUT FOLDER FOR EASY ACCESS.
+
 dtm <- DocumentTermMatrix(docs)
 #convert rownames to filenames#convert rownames to filenames
 rownames(dtm) <- paste(corpus.list$author, corpus.list$title,
@@ -154,12 +157,21 @@ for (i in 1:(nrow(dtm)%/%5000+1)){
 dtm  <- dtm[rowTotals> 0, ]
 corpus.list=corpus.list[rowTotals>0, ]
 
+save(dtm, file = "../output/dtm")
+save(corpus.list, file = "../output/corpus.list")
 ```
+
+```{r}
+load("../output/dtm")
+load("../output/corpus.list")
+```
+
 
 Run LDA
 
 ```{r, eval=F}
-# DO NOT RUN FOR EVALUATION. THE REQUIRED OUTPUTS ARE SAVED AS CSV FILES FOR EASY ACCESS.
+# WARNING: TIME INTENSIVE CHUNK. DO NOT RUN THIS CHUNK FOR EVALUATION
+# THE REQUIRED OUTPUTS ARE SAVED IN OUTPUT FOLDER FOR EASY ACCESS.
 
 #Set parameters for Gibbs sampling
 burnin <- 4000
@@ -177,19 +189,30 @@ ldaOut <-LDA(dtm, k, method="Gibbs", control=list(nstart=nstart,
                                                  seed = seed, best=best,
                                                  burnin = burnin, iter = iter, 
                                                  thin=thin))
+
+save(ldaOut, file = paste("../output/LDAGibbs",k, sep="_"))
 #write out results
 #docs to topics
 ldaOut.topics <- as.matrix(topics(ldaOut))
 table(c(1:k, ldaOut.topics))
+save(ldaOut.topics,file=paste("../output/LDAGibbs",k,"DocsToTopics", sep="_"))
 write.csv(ldaOut.topics,file=paste("../output/LDAGibbs",k,"DocsToTopics.csv", sep="_"))
 
 #top 8 terms in each topic
 ldaOut.terms <- as.matrix(terms(ldaOut,8))
+save(ldaOut.terms,file=paste("../output/LDAGibbs",k,"TopicsToTerms", sep="_"))
 write.csv(ldaOut.terms,file=paste("../output/LDAGibbs",k,"TopicsToTerms.csv", sep="_"))
 
 #probabilities associated with each topic assignment
 topicProbabilities <- as.data.frame(ldaOut@gamma)
+save(topicProbabilities,file=paste("../output/LDAGibbs",k,"TopicProbabilities", sep="_"))
 write.csv(topicProbabilities,file=paste("../output/LDAGibbs",k,"TopicProbabilities.csv", sep="_"))
+```
+
+```{r}
+load("../output/LDAGibbs_8_DocsToTopics")
+load("../output/LDAGibbs_8_TopicsToTerms")
+load("../output/LDAGibbs_8_TopicProbabilities")
 ```
 
 
