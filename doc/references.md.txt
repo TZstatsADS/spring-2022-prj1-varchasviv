@@ -1,0 +1,18 @@
+The following websites were used as technical references:
+
++ http://nicercode.github.io/blog/2013-04-05-projects/
++ https://eight2late.wordpress.com/2015/09/29/a-gentle-introduction-to-topic-modeling-using-r/
++ https://holtzy.github.io/Pimp-my-rmd/
++ https://prettydoc.statr.me/themes.html
+
+The following websites were used as historical and other references:
+
++ https://www.gvsd.org/cms/lib02/PA01001045/Centricity/ModuleInstance/3385/Communism_Vs_Capitalism.pdf
++ https://www.history.com/topics/cold-war/cold-war-history
++ https://www.britannica.com/event/Cold-War
++ https://www.bbc.co.uk/bitesize/guides/z8qnsbk/revision/3#:~:text=In%20a%20capitalist%20state%2C%20the,the%20Communist%20Party%2Dled%20government.
+
+Data:
+
++ https://www.kaggle.com/kouroshalizadeh/history-of-philosophy
++ http://philosophydata.com/index.html

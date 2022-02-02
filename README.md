@@ -38,4 +38,4 @@ proj/
 
 Please see each subfolder for a README file.
 
-Please see here for all references used.
+Please see [here](./doc/references.md) for all references used.
