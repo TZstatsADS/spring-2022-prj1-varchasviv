@@ -16,7 +16,7 @@ packages.used=c("rvest", "tibble",
                 "tm", "syuzhet", "factoextra", 
                 "beeswarm", "scales", "RColorBrewer",
                 "RANN", "topicmodels", "stringr","plyr","knitr",
-                "word2vec")
+                "word2vec","ggwordcloud","gridExtra","grid","wordcloud")
 # check packages that need to be installed.
 packages.needed=setdiff(packages.used, 
                         intersect(installed.packages()[,1], 
@@ -45,6 +45,10 @@ library("topicmodels")
 library("stringr")
 library("knitr")
 library("word2vec")
+library("ggwordcloud")
+library("gridExtra")
+library("grid")
+library("wordcloud")
 
 source("../lib/plotstacked.R")
 source("../lib/speechFuncs.R")
@@ -303,17 +307,49 @@ lookslike
 ```
 
 ```{r}
-lookslike <-predict(model_communism,c("property"),type ="nearest",top_n =5)
+draw_word_cloud <- function(word){
+  par(mfrow=c(1,2), mar = c(0,0,0,0))
+  lookslike_communism <-predict(model_communism,c("property"),type ="nearest",top_n =20)
+  lookslike_capitalism <-predict(model_capitalism,c("property"),type ="nearest",top_n =20)
+  
+  plot1 <- ggplot(lookslike_communism[[1]], 
+         aes(label = term2,
+             size =  lookslike_communism[[1]]$similarity*10000-min(lookslike_communism[[1]]$similarity)*10000,
+             color=lookslike_communism[[1]]$similarity*10000-min(lookslike_communism[[1]]$similarity)*10000)) +
+    geom_text_wordcloud_area() +
+    scale_size_area(max_size = 15)+
+    theme_minimal()+
+    scale_color_gradient(low = "orangered", high = "darkred")+
+    ggtitle("Communism")+
+    theme(plot.title = element_text(hjust = 0.5))
+  
+  plot2 <- ggplot(lookslike_capitalism[[1]], 
+         aes(label = term2,
+             size =  lookslike_capitalism[[1]]$similarity*10000-min(lookslike_capitalism[[1]]$similarity)*10000,
+             color=lookslike_capitalism[[1]]$similarity*10000-min(lookslike_capitalism[[1]]$similarity)*10000)) +
+    geom_text_wordcloud_area() +
+    scale_size_area(max_size = 15)+
+    theme_minimal()+
+    scale_color_gradient(low = "lightblue", high = "darkblue")+
+    ggtitle("Capitalism")+
+    theme(plot.title = element_text(hjust = 0.5))
+  
+
+  grid.arrange(plot1, plot2, ncol=2, top = textGrob(paste("Word:",word),gp=gpar(fontsize=20,font=1)))
+}
+
+draw_word_cloud("property")
+
+
+
+```
+
+
+```{r}
+lookslike <-predict(model_communism,c("property"),type ="nearest",top_n =20)
 lookslike
 lookslike <-predict(model_capitalism,c("property"),type ="nearest",top_n =50)
 lookslike
-```
-
-```{r}
-library(wordcloud)
-
-wordcloud(lookslike$property$term2, lookslike$property$similarity*500-min(lookslike$property$similarity)*500,rot.per=0.3,random.color=FALSE,
-          colors=brewer.pal(9,"Reds"), main = "Communism - 'property'")
 ```
 
 
