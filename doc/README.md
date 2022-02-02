@@ -8,4 +8,4 @@ The doc directory contains the report or presentation files. It can have subfold
 
 + `The_Cold_War.html`: HTML file with the report and results of the project. To view, download and save as a .html file locally.
 
-+ `logo.jpg`: Image of Adam Smith and Karl Marx used in [main repo](..) README, [`The_Cold_War.Rmd`](The_Cold_War.Rmd), and [`The_Cold_War.html`](The_Cold_War.html)
++ `logo.jpg`: Image of Adam Smith and Karl Marx used in [main repo README](../README.md), [`The_Cold_War.Rmd`](The_Cold_War.Rmd), and [`The_Cold_War.html`](The_Cold_War.html)
