@@ -4,4 +4,14 @@
 
 The data directory contains data used in the analysis. This is treated as read only; in paricular the R/python files are never allowed to write to the files in here. Depending on the project, these might be csv files, a database, and the directory itself may have subdirectories.
 
+We use a data set of over 300,000 sentences from over 50 philosophical texts compiled by Kourosh Alizadeh for the Philosophy Data Project.
+
+Links:
+
++ Philosophy Data Project - http://philosophydata.com/index.html
+
++ Dataset - https://www.kaggle.com/kouroshalizadeh/history-of-philosophy
+
+To reproduce analysis, download the dataset and save it to the data folder.
+
 
