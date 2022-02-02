@@ -11,7 +11,7 @@ output:
 knitr::opts_chunk$set(echo=F)
 knitr::opts_chunk$set(warning=F)
 knitr::opts_chunk$set(message=F)
-knitr::opts_chunk$set(comment=NA)
+#knitr::opts_chunk$set(comment=NA)
 ```
 
 
@@ -69,11 +69,13 @@ source("../lib/speechFuncs.R")
 ![Adam Smith and Karl Marx](logo.jpg){width=30%}
 </center>
 
-Throughout history, there have been developed many a political and socioeconomic framework to better the lives of those living within it. Of these, two schools have caught the attention of the world over the last few centuries, so much so that countries have gone to war over them - communism and capitalism. These frameworks are guided by the texts of those who formulated them over the years. These ideas are inherently philosophical, as they question the very meaning of society and what it means to be a part of it. To find out what these texts are talking about, let's analyze these philosophical text using the tools of Data Science and Natural Language Processing.
+Throughout history, there have been developed many a political and socioeconomic framework to better the lives of those living within it. Of these, two schools have caught the attention of the world over the last few centuries, so much so that countries have gone to war over them - communism and capitalism. These frameworks are guided by the texts of those who formulated them over the years. These ideas are inherently philosophical, as they question the very meaning of society and what it means to be a part of it. To find out what these texts are talking about, let's analyze these philosophical text using the tools of Data Science and Natural Language Processing. We are interested in looking at what words these school are using, what topics they primarily discuss, and get a sense of how they feel about certain words.
+
+(Depicted in the figure above: Adam Smith (Capitalist) and Karl Marx (Communist))
 
 # Data Exploration
 
-In this analysis, we use a data set of over 300,000 sentences from over 50 philosphical texts compiled by Kourosh Alizadeh for the Philosophy Data Project. We start by loading in the data set and exploring the shape and structure of the data set.
+In this analysis, we use a data set of over 300,000 sentences from over 50 philosophical texts compiled by Kourosh Alizadeh for the Philosophy Data Project. We start by loading in the data set and exploring the shape and structure of the data set.
 
 ```{r}
 # Loading in the Data
@@ -154,13 +156,16 @@ capitalism_text_wordcounts_top_10 <- capitalism_text_wordcounts[1:10,]
 ```
 
 ```{r}
-freq_plot_communism <- ggplot(communism_text_wordcounts_top_10, aes(x = reorder(word, -n), y = n)) + geom_bar(stat = "identity",fill="darkred") + xlab("Word") + ylab("Frequency") + ggtitle("Top 10 Most Frequent Words in Books on Communism")+theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylim(c(0,3500))
-freq_plot_capitalism <- ggplot(capitalism_text_wordcounts_top_10, aes(x = reorder(word, -n), y = n)) + geom_bar(stat = "identity",fill="darkblue")+ xlab("Word") + ylab("Frequency") + ggtitle("Top 10 Most Frequent Words in Books on Capitalism")+theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylim(c(0,3500))
+freq_plot_communism <- ggplot(communism_text_wordcounts_top_10, aes(x = reorder(word, -n), y = n)) + geom_bar(stat = "identity",fill="darkred") + xlab("Word") + ylab("Frequency") + ggtitle("Top 10 Most Frequent Words in Communism")+theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylim(c(0,3500)) + theme(plot.title = element_text(size = 10.5))
+freq_plot_capitalism <- ggplot(capitalism_text_wordcounts_top_10, aes(x = reorder(word, -n), y = n)) + geom_bar(stat = "identity",fill="darkblue")+ xlab("Word") + ylab("Frequency") + ggtitle("Top 10 Most Frequent Words in Capitalism")+theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylim(c(0,3500))+ theme(plot.title = element_text(size = 11))
 grid.arrange(freq_plot_communism, freq_plot_capitalism, ncol=2)
 ```
+The plot above shows the top 10 most common words in books on communism and capitalism respectively. Both schools seem to use words related to money and manufacturing. However, communism includes a few words related to society while capitalism includes words related to the financial market. While it's hard to infer much from 10 words alone, this gives us a preliminary idea of what to expect from a deeper dive.
 
+# Topic Modeling
 
-LDA
+Let's check out what some of the topics these books discuss are! To do this, we use a statistical model called Latent Dirichlet Allocation. This model attempts to capture the themes discussed across these texts by looking at the co-occurrence of words within and across texts. We try to find 8 latent topics from these texts.
+
 ```{r}
 # Preparing for Corpus for Latent Dirichlet Allocation
 
@@ -171,19 +176,20 @@ corpus.list$snipets=paste(sentence.pre, corpus.list$sentence_str, sentence.post,
 rm.rows=(1:nrow(corpus.list))[corpus.list$sent.id==1]
 rm.rows=c(rm.rows, rm.rows-1)
 corpus.list=corpus.list[-rm.rows, ]
-```
 
-## Text mining
-```{r}
 # Creating Corpus
-
 docs <- Corpus(VectorSource(corpus.list$snipets))
 ```
 
-### Text basic processing
-Adapted from <https://eight2late.wordpress.com/2015/09/29/a-gentle-introduction-to-topic-modeling-using-r/>.
+## Text Pre-Processing
+
+Before we run the text through this model, we must process it first to avoid making trivial or incorrect conclusions. We lower the case of the text (to avoid confusion between "Labour" and "labour), remove punctuation (to avoid confusion between "labour." and "labour"), remove numbers (such as "9" from "9th"), remove stopwords that don't contribute to the meaning of a sentence, remove white space (such as "..tonight.    From now on,..."), and perform stemming to unify words with the same root (such as "labour" and "labouring").
+
+While it may seem excessive, all of this is done in order to extract the most meaning out of our data.
 
 ```{r, warning = F, message=F}
+# Adapted from <https://eight2late.wordpress.com/2015/09/29/a-gentle-introduction-to-topic-modeling-using-r/>.
+
 # Data Cleaning to Avoid Triviality and Redundancy
 
 set.seed(1)
@@ -223,9 +229,7 @@ docs <- tm_map(docs,stemDocument)
 writeLines(as.character(docs[[index]]))
 ```
 
-### Topic modeling
-
-Generate document-term matrices. 
+### LDA
 
 ```{r, eval=F}
 # WARNING: TIME INTENSIVE CHUNK. DO NOT RUN THIS CHUNK FOR EVALUATION
@@ -265,9 +269,6 @@ save(corpus.list, file = "../output/corpus.list")
 load("../output/dtm")
 load("../output/corpus.list")
 ```
-
-
-Run LDA
 
 ```{r, eval=F}
 # WARNING: TIME INTENSIVE CHUNK. DO NOT RUN THIS CHUNK FOR EVALUATION
@@ -320,6 +321,8 @@ load("../output/LDAGibbs_8_TopicsToTerms")
 load("../output/LDAGibbs_8_TopicProbabilities")
 ```
 
+The model identifies the 8 following unlabeled topics across both schools. For each topic, we list a combination of the most popular and salient terms.
+
 ```{r}
 # Computing Most Salient and Most Popular Terms by Topic
 
@@ -335,8 +338,8 @@ for(i in 1:k){
 #t(topics.terms)
 #ldaOut.terms
 
-cat("The most popular and salient terms for each topic:\n\n")
-kable(rbind(t(topics.terms),ldaOut.terms), format="simple", caption= "Table 1: The most popular and salient terms for each topic")
+
+datatable(rbind(t(topics.terms),ldaOut.terms), rownames = FALSE, filter="top", options = list(pageLength = 15, scrollX=T) )
 ```
 
 ```{r}
