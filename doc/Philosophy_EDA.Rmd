@@ -11,6 +11,8 @@ knitr::opts_chunk$set(message=F)
 
 
 ```{r}
+# Installing and Loading Required Packages
+
 packages.used=c("rvest", "tibble", 
                 "sentimentr", "gplots", "dplyr",
                 "tm", "syuzhet", "factoextra", 
@@ -55,18 +57,19 @@ source("../lib/speechFuncs.R")
 ```
 
 ```{r}
+# Loading in the Data
 sentence.list <- read.csv("../data/philosophy_data.csv")
 ```
 
 ```{r}
-sort(unique(sentence.list$author))
-
-unique(sentence.list$title[sentence.list$author=="Kant"])
+# Philosophy Books in the Schools of Communism and Capitalism
 
 unique(sentence.list[,c('author','school')])[unique(sentence.list[,c('author','school')])$school %in% c("communism","capitalism"),]
 ```
 
 ```{r}
+# Subsetting Data from Communism and Capitalism Books
+
 commcap <- c("communism","capitalism")
 sentence.list.commcap <- sentence.list %>% filter(school %in% commcap)
 
@@ -75,6 +78,8 @@ sentence.list.commcap <- sentence.list %>% filter(school %in% commcap)
 
 
 ```{r}
+# Adding Sentence ID - Index of the Sentence in its Corresponding Book
+
 my.add.index <- function(df){
   df$sent.id <- 1:nrow(df)
   return(df)
@@ -84,6 +89,8 @@ sentence.list.commcap <- ddply(sentence.list.commcap,.(title),my.add.index)
 
 
 ```{r}
+# Preparing for Corpus for Latent Dirichlet Allocation
+
 corpus.list=sentence.list.commcap[2:(nrow(sentence.list.commcap)-1), ]
 sentence.pre=sentence.list.commcap$sentence_str[1:(nrow(sentence.list.commcap)-2)]
 sentence.post=sentence.list.commcap$sentence_str[3:(nrow(sentence.list.commcap)-1)]
@@ -95,6 +102,8 @@ corpus.list=corpus.list[-rm.rows, ]
 
 ## Text mining
 ```{r}
+# Creating Corpus
+
 docs <- Corpus(VectorSource(corpus.list$snipets))
 ```
 
@@ -102,6 +111,8 @@ docs <- Corpus(VectorSource(corpus.list$snipets))
 Adapted from <https://eight2late.wordpress.com/2015/09/29/a-gentle-introduction-to-topic-modeling-using-r/>.
 
 ```{r, warning = F, message=F}
+# Data Cleaning to Avoid Triviality and Redundancy
+
 set.seed(1)
 index <- sample(1:nrow(corpus.list), 1)
 
@@ -147,6 +158,8 @@ Generate document-term matrices.
 # WARNING: TIME INTENSIVE CHUNK. DO NOT RUN THIS CHUNK FOR EVALUATION
 # THE REQUIRED OUTPUTS ARE SAVED IN OUTPUT FOLDER FOR EASY ACCESS.
 
+# Creating Document Term Matrix (DTM) for LDA
+
 dtm <- DocumentTermMatrix(docs)
 #convert rownames to filenames#convert rownames to filenames
 rownames(dtm) <- paste(corpus.list$author, corpus.list$title,
@@ -168,11 +181,14 @@ for (i in 1:(nrow(dtm)%/%5000+1)){
 dtm  <- dtm[rowTotals> 0, ]
 corpus.list=corpus.list[rowTotals>0, ]
 
+# Saving DTM-related Files
 save(dtm, file = "../output/dtm")
 save(corpus.list, file = "../output/corpus.list")
 ```
 
 ```{r}
+# Loading in pre-saved DTM-related Files to Avoid Long Computation
+
 load("../output/dtm")
 load("../output/corpus.list")
 ```
@@ -183,6 +199,8 @@ Run LDA
 ```{r, eval=F}
 # WARNING: TIME INTENSIVE CHUNK. DO NOT RUN THIS CHUNK FOR EVALUATION
 # THE REQUIRED OUTPUTS ARE SAVED IN OUTPUT FOLDER FOR EASY ACCESS.
+
+# Running LDA and Saving Related Files for Future Use
 
 #Set parameters for Gibbs sampling
 burnin <- 4000
@@ -221,12 +239,16 @@ write.csv(topicProbabilities,file=paste("../output/LDAGibbs",k,"TopicProbabiliti
 ```
 
 ```{r}
+# Loading in pre-saved LDA-related Files to Avoid Long Computation
+
 load("../output/LDAGibbs_8_DocsToTopics")
 load("../output/LDAGibbs_8_TopicsToTerms")
 load("../output/LDAGibbs_8_TopicProbabilities")
 ```
 
 ```{r}
+# Computing Most Salient and Most Popular Terms by Topic
+
 terms.beta=ldaOut@beta
 terms.beta=scale(terms.beta)
 topics.terms=NULL
@@ -241,6 +263,8 @@ kable(rbind(t(topics.terms),ldaOut.terms), format="simple", caption= "Table 1: T
 ```
 
 ```{r}
+# Preparing for Clustering
+
 topics.hash=c("Production","Politics","Trade","Finance & Banking","Property","Assets","Socioeconomics","Time")
 corpus.list$ldatopic=as.vector(ldaOut.topics)
 corpus.list$ldahash=topics.hash[ldaOut.topics]
@@ -308,7 +332,7 @@ lookslike
 
 ```{r, warning = F, message = F}
 draw_word_cloud <- function(word){
-  par(mfrow=c(1,2), mar = c(0,0,0,0))
+  #par(mfrow=c(1,2), mar = c(0,0,0,0))
   lookslike_communism <-predict(model_communism,c(word),type ="nearest",top_n =20)
   lookslike_capitalism <-predict(model_capitalism,c(word),type ="nearest",top_n =20)
   
@@ -336,8 +360,9 @@ draw_word_cloud <- function(word){
   
 
   arranged <- arrangeGrob(plot1, plot2, ncol=2, top = textGrob(paste("Words Used in Similar Contexts as '",word,"'", sep=""),gp=gpar(fontsize=20,font=1)), bottom = textGrob("Word size corresponds to similarity to the original word in the context of corresponding group.",gp=gpar(fontsize=10,font=1, alpha = 0.7)))
+  
   plot(arranged)
-  ggsave(file=paste("../figs/words_similar_to_",word,".jpg",sep=""), arranged)
+  ggsave(file=paste("../figs/words_similar_to_",word,".jpg",sep=""), arranged, width=7.29, height=4.5)
 }
 
 draw_word_cloud("property")
