@@ -10,10 +10,11 @@ This is the first and only *individual* (as opposed to *team*) project this seme
 Term: Spring 2022
 
 + Projec title: **The Cold War**
-+ This project is conducted by Varchasvi Vedula
++ This project is conducted by **Varchasvi Vedula**
 
 + Project summary: What ideological differences really drove the Cold War? This report is an analysis of Communist and Capitalist philosophical texts. Using the power of Natural Language Processing, we try to understand the vernacular of these schools of thought, what topics they primarily discuss, and how they relate to certain terms related to socioeconomics, property, finance, and assets, among other themes. We use the techniques of word frequency analysis, Latent Dirichlet Allocation, and word2vec modeling for finding similar words.
 
+To view this project: Go to [this file](./doc/The_Cold_War.html)
 
 To reproduce this project:
 
