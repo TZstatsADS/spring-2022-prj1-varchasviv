@@ -4,7 +4,9 @@ output: html_notebook
 ---
 
 ```{r include = F}
-knitr::opts_chunk$set(echo=F, message=F, warning=F)
+knitr::opts_chunk$set(echo=F)
+knitr::opts_chunk$set(warning=F)
+knitr::opts_chunk$set(message=F)
 ```
 
 
@@ -13,7 +15,8 @@ packages.used=c("rvest", "tibble",
                 "sentimentr", "gplots", "dplyr",
                 "tm", "syuzhet", "factoextra", 
                 "beeswarm", "scales", "RColorBrewer",
-                "RANN", "topicmodels", "stringr","plyr","knitr")
+                "RANN", "topicmodels", "stringr","plyr","knitr",
+                "word2vec")
 # check packages that need to be installed.
 packages.needed=setdiff(packages.used, 
                         intersect(installed.packages()[,1], 
@@ -41,6 +44,7 @@ library("tm")
 library("topicmodels")
 library("stringr")
 library("knitr")
+library("word2vec")
 
 source("../lib/plotstacked.R")
 source("../lib/speechFuncs.R")
@@ -60,8 +64,6 @@ unique(sentence.list[,c('author','school')])[unique(sentence.list[,c('author','s
 
 ```{r}
 commcap <- c("communism","capitalism")
-commcap <- c("empiricism","rationalism")
-
 sentence.list.commcap <- sentence.list %>% filter(school %in% commcap)
 
 ```
@@ -231,7 +233,7 @@ for(i in 1:k){
 #ldaOut.terms
 
 cat("The most popular and salient terms for each topic:\n\n")
-kable(rbind(t(topics.terms),ldaOut.terms), format="simple", label= "The most popular and salient terms for each topic")
+kable(rbind(t(topics.terms),ldaOut.terms), format="simple", caption= "Table 1: The most popular and salient terms for each topic")
 ```
 
 ```{r}
@@ -269,55 +271,81 @@ heatmap.2(as.matrix(topic.summary[,topic.plot+1]),
           trace = "none", density.info = "none",
           main = "Heatmap of Topics by Author")
 ```
-```{r, fig.width=3.3, fig.height=5, eval = F}
-# [1] "Production"        "Politics"          "Trade"             "Finance & Banking" "Property"         
-# [6] "Assets"            "Socioeconomics"    "Time"     
- 
 
-par(mfrow=c(5, 1), mar=c(1,1,2,0), bty="n", xaxt="n", yaxt="n")
+```{r}
+communism <- sentence.list.commcap %>% filter(school == "communism")
+all_communism_text <- paste(communism$sentence_str, collapse = " ")
 
-topic.plot=c(6, 7, 5, 1)
-print(topics.hash[topic.plot])
+set.seed(123456789)
+model_communism <-word2vec(x =communism$sentence_str,type ="cbow",dim =25,iter =200)
 
-speech.df=tbl_df(corpus.list.df)%>%filter(author=="Marx", title == "The Communist Manifesto")%>%select(sent.id, Production:Time)
-speech.df=as.matrix(speech.df)
-speech.df[,-1]=replace(speech.df[,-1], speech.df[,-1]<1/15, 0.001)
-speech.df[,-1]=f.smooth.topic(x=speech.df[,1], y=speech.df[,-1])
-plot.stacked(speech.df[,1], speech.df[,topic.plot+1], 
-             xlab="Sentences", ylab="Topic share", main="The Communist Manifesto, Karl Marx")
+embedding <-as.matrix(model_communism)
+embedding <-predict(model_communism,c("money"),type ="embedding")
+embedding
 
-speech.df=tbl_df(corpus.list.df)%>%filter(File=="WilliamJClinton", type=="nomin", Term==1)%>%select(sent.id, Economy:Legislation)
-speech.df=as.matrix(speech.df)
-speech.df[,-1]=replace(speech.df[,-1], speech.df[,-1]<1/15, 0.001)
-speech.df[,-1]=f.smooth.topic(x=speech.df[,1], y=speech.df[,-1])
-plot.stacked(speech.df[,1], speech.df[,topic.plot+1],
-            xlab="Sentences", ylab="Topic share", main="Bill Clinton, Nomination")
+lookslike <-predict(model_communism,c("property"),type ="nearest",top_n =5)
+lookslike
+```
 
-speech.df=tbl_df(corpus.list.df)%>%filter(File=="GeorgeWBush", type=="nomin", Term==1)%>%select(sent.id, Economy:Legislation)
-speech.df=as.matrix(speech.df)
-speech.df[,-1]=replace(speech.df[,-1], speech.df[,-1]<1/15, 0.001)
-speech.df[,-1]=f.smooth.topic(x=speech.df[,1], y=speech.df[,-1])
-plot.stacked(speech.df[,1], speech.df[,topic.plot+1], 
-            xlab="Sentences", ylab="Topic share", main="George W Bush, Nomination")
+```{r}
+capitalism <- sentence.list.commcap %>% filter(school == "capitalism")
+all_capitalism_text <- paste(capitalism$sentence_str, collapse = " ")
 
-speech.df=tbl_df(corpus.list.df)%>%filter(File=="BarackObama", type=="nomin", Term==1)%>%select(sent.id, Economy:Legislation)
-speech.df=as.matrix(speech.df)
-speech.df[,-1]=replace(speech.df[,-1], speech.df[,-1]<1/15, 0.001)
-speech.df[,-1]=f.smooth.topic(x=speech.df[,1], y=speech.df[,-1])
-plot.stacked(speech.df[,1], speech.df[,topic.plot+1],
-            xlab="Sentences", ylab="Topic share", main="Barack Obama, Nomination")
+set.seed(123456789)
+model_capitalism <-word2vec(x =capitalism$sentence_str,type ="cbow",dim =25,iter =200)
 
-speech.df=tbl_df(corpus.list.df)%>%filter(File=="DonaldJTrump", type=="nomin")%>%select(sent.id, Economy:Legislation)
-speech.df=as.matrix(speech.df)
-speech.df[,-1]=replace(speech.df[,-1], speech.df[,-1]<1/15, 0.001)
-speech.df[,-1]=f.smooth.topic(x=speech.df[,1], y=speech.df[,-1])
-plot.stacked(speech.df[,1], speech.df[,topic.plot+1],
-            xlab="Sentences", ylab="Topic share", main="Donald Trump, Nomination")
+embedding <-as.matrix(model_capitalism)
+embedding <-predict(model_capitalism,c("money"),type ="embedding")
+embedding
+
+lookslike <-predict(model_capitalism,c("property"),type ="nearest",top_n =5)
+lookslike
+```
+
+```{r}
+lookslike <-predict(model_communism,c("property"),type ="nearest",top_n =5)
+lookslike
+lookslike <-predict(model_capitalism,c("property"),type ="nearest",top_n =50)
+lookslike
+```
+
+```{r}
+library(wordcloud)
+
+wordcloud(lookslike$property$term2, lookslike$property$similarity*500-min(lookslike$property$similarity)*500,rot.per=0.3,random.color=FALSE,
+          colors=brewer.pal(9,"Reds"), main = "Communism - 'property'")
 ```
 
 
-Mind and body. Cartesian - duality between mind and body. justice, good, mind. male vs female, feminism - wollstonecraft. naturalism. religion, god. Deontolgy and consequentialsm. location. free will. society vs self. females focused more on society
+```{r}
+lookslike <-predict(model_communism,c("wages"),type ="nearest",top_n =5)
+lookslike
+lookslike <-predict(model_capitalism,c("wages"),type ="nearest",top_n =5)
+lookslike
+```
 
-good
-harm
-action
+```{r}
+lookslike <-predict(model_communism,c("taxes"),type ="nearest",top_n =5)
+lookslike
+lookslike <-predict(model_capitalism,c("taxes"),type ="nearest",top_n =5)
+lookslike
+```
+
+
+```{r}
+my_word <- "community"
+lookslike <-predict(model_communism,my_word,type ="nearest",top_n =5)
+lookslike
+lookslike <-predict(model_capitalism,my_word,type ="nearest",top_n =5)
+lookslike
+```
+
+
+```{r}
+my_word <- "intervention"
+lookslike <-predict(model_communism,my_word,type ="nearest",top_n =5)
+lookslike
+lookslike <-predict(model_capitalism,my_word,type ="nearest",top_n =5)
+lookslike
+```
+
