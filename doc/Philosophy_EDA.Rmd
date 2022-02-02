@@ -1,12 +1,17 @@
 ---
-title: "R Notebook"
-output: html_notebook
+title: "Communism vs Capitalism"
+author: "Varchasvi Vedula"
+output:
+  prettydoc::html_pretty:
+    theme: architect
+    highlight: github
 ---
 
 ```{r include = F}
 knitr::opts_chunk$set(echo=F)
 knitr::opts_chunk$set(warning=F)
 knitr::opts_chunk$set(message=F)
+knitr::opts_chunk$set(comment=NA)
 ```
 
 
@@ -18,7 +23,8 @@ packages.used=c("rvest", "tibble",
                 "tm", "syuzhet", "factoextra", 
                 "beeswarm", "scales", "RColorBrewer",
                 "RANN", "topicmodels", "stringr","plyr","knitr",
-                "word2vec","ggwordcloud","gridExtra","grid","wordcloud")
+                "word2vec","ggwordcloud","gridExtra","grid","wordcloud",
+                "tidytext","prettydoc", "DT")
 # check packages that need to be installed.
 packages.needed=setdiff(packages.used, 
                         intersect(installed.packages()[,1], 
@@ -51,21 +57,53 @@ library("ggwordcloud")
 library("gridExtra")
 library("grid")
 library("wordcloud")
+library("tidytext")
+library("prettydoc")
+library("DT")
 
 source("../lib/plotstacked.R")
 source("../lib/speechFuncs.R")
 ```
+
+<center>
+![Adam Smith and Karl Marx](logo.jpg){width=30%}
+</center>
+
+Throughout history, there have been developed many a political and socioeconomic framework to better the lives of those living within it. Of these, two schools have caught the attention of the world over the last few centuries, so much so that countries have gone to war over them - communism and capitalism. These frameworks are guided by the texts of those who formulated them over the years. These ideas are inherently philosophical, as they question the very meaning of society and what it means to be a part of it. To find out what these texts are talking about, let's analyze these philosophical text using the tools of Data Science and Natural Language Processing.
+
+# Data Exploration
+
+In this analysis, we use a data set of over 300,000 sentences from over 50 philosphical texts compiled by Kourosh Alizadeh for the Philosophy Data Project. We start by loading in the data set and exploring the shape and structure of the data set.
 
 ```{r}
 # Loading in the Data
 sentence.list <- read.csv("../data/philosophy_data.csv")
 ```
 
+The dimensions of the data set are:
+
+
+
+```{r}
+dim(sentence.list)
+```
+
+The data set has the following columns:
+
+```{r}
+colnames(sentence.list)
+```
+
+We notice that the data is provided in a tidy format, so we directly proceed to filter the data that we are interested in. The following table shows the books in the schools of communism and capitalism included in this data set.
+
 ```{r}
 # Philosophy Books in the Schools of Communism and Capitalism
-
-unique(sentence.list[,c('author','school')])[unique(sentence.list[,c('author','school')])$school %in% c("communism","capitalism"),]
+commcap_books <- unique(sentence.list[,c('title','author','school')])[unique(sentence.list[,c('title','author','school')])$school %in% c("communism","capitalism"),]
+rownames(commcap_books) <- NULL
+datatable(commcap_books, rownames = FALSE, filter="top", options = list(pageLength = 6, scrollX=T) )
 ```
+
+We've got 3 books from each school!
 
 ```{r}
 # Subsetting Data from Communism and Capitalism Books
@@ -87,7 +125,42 @@ my.add.index <- function(df){
 sentence.list.commcap <- ddply(sentence.list.commcap,.(title),my.add.index)
 ```
 
+## Word Use Statistics
 
+We are interested in seeing what is going on in these books. So, let's look at the kinds of words the communism books use versus those the capitalist books are using.
+
+```{r}
+communism <- sentence.list.commcap %>% filter(school == "communism")
+all_communism_text <- paste(communism$sentence_str, collapse = " ")
+capitalism <- sentence.list.commcap %>% filter(school == "capitalism")
+all_capitalism_text <- paste(capitalism$sentence_str, collapse = " ")
+```
+
+```{r}
+communism_text_df <- tibble(Text = all_communism_text) # tibble aka neater data frame
+communism_text_words <- communism_text_df %>% unnest_tokens(output = word, input = Text) 
+communism_text_words  <- communism_text_words  %>% anti_join(stop_words) # Remove stop words in peter_words
+# Word Counts:
+communism_text_wordcounts <- communism_text_words  %>% count(word, sort = TRUE)
+communism_text_wordcounts_top_10 <- communism_text_wordcounts[1:10,]
+
+
+capitalism_text_df <- tibble(Text = all_capitalism_text) # tibble aka neater data frame
+capitalism_text_words <- capitalism_text_df %>% unnest_tokens(output = word, input = Text) 
+capitalism_text_words  <- capitalism_text_words  %>% anti_join(stop_words) # Remove stop words in peter_words
+# Word Counts:
+capitalism_text_wordcounts <- capitalism_text_words  %>% count(word, sort = TRUE)
+capitalism_text_wordcounts_top_10 <- capitalism_text_wordcounts[1:10,]
+```
+
+```{r}
+freq_plot_communism <- ggplot(communism_text_wordcounts_top_10, aes(x = reorder(word, -n), y = n)) + geom_bar(stat = "identity",fill="darkred") + xlab("Word") + ylab("Frequency") + ggtitle("Top 10 Most Frequent Words in Books on Communism")+theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylim(c(0,3500))
+freq_plot_capitalism <- ggplot(capitalism_text_wordcounts_top_10, aes(x = reorder(word, -n), y = n)) + geom_bar(stat = "identity",fill="darkblue")+ xlab("Word") + ylab("Frequency") + ggtitle("Top 10 Most Frequent Words in Books on Capitalism")+theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylim(c(0,3500))
+grid.arrange(freq_plot_communism, freq_plot_capitalism, ncol=2)
+```
+
+
+LDA
 ```{r}
 # Preparing for Corpus for Latent Dirichlet Allocation
 
@@ -241,6 +314,7 @@ write.csv(topicProbabilities,file=paste("../output/LDAGibbs",k,"TopicProbabiliti
 ```{r}
 # Loading in pre-saved LDA-related Files to Avoid Long Computation
 
+load("../output/ldaGibbs_8")
 load("../output/LDAGibbs_8_DocsToTopics")
 load("../output/LDAGibbs_8_TopicsToTerms")
 load("../output/LDAGibbs_8_TopicProbabilities")
@@ -248,6 +322,9 @@ load("../output/LDAGibbs_8_TopicProbabilities")
 
 ```{r}
 # Computing Most Salient and Most Popular Terms by Topic
+
+#Number of topics
+k <- 8
 
 terms.beta=ldaOut@beta
 terms.beta=scale(terms.beta)
@@ -274,7 +351,7 @@ corpus.list.df=cbind(corpus.list, topicProbabilities)
 ```
 
 ## Clustering of topics
-```{r, fig.width=8, fig.height=4}
+```{r, fig.width=8, fig.height=4, message = F, warning = F}
 par(mar=c(5.1, 4.1, 4.1, 2.1))
 topic.summary=tbl_df(corpus.list.df)%>%
               select(author, Production:Time)%>%
@@ -292,43 +369,51 @@ topic.summary <- topic.summary[c("Marx","Lenin","Keynes","Smith","Ricardo"),]
 topic.plot=c(1:8)
 #print(topics.hash[topic.plot])
 #topic.summary
+
+# JPEG device
+jpeg(file = "../output/heatmap_author_by_topic.jpeg")
+
+# Code
 heatmap.2(as.matrix(topic.summary[,topic.plot+1]), 
           scale = "column", key=F, 
           col = bluered(100),
-          cexRow = 1, cexCol = 1, margins = c(4, 4),
+          cexRow = 1, cexCol = 1, margins = c(8,8),
           trace = "none", density.info = "none",
           main = "Heatmap of Topics by Author")
+
+# Close device
+trash <- dev.off()
+
+heatmap.2(as.matrix(topic.summary[,topic.plot+1]), 
+          scale = "column", key=F, 
+          col = bluered(100),
+          cexRow = 1, cexCol = 1, margins = c(8,8),
+          trace = "none", density.info = "none",
+          main = "Heatmap of Topics by Author")
+
+```
+
+
+```{r, eval = F}
+# WARNING: TIME INTENSIVE CHUNK. DO NOT RUN THIS CHUNK FOR EVALUATION
+# THE REQUIRED OUTPUTS ARE SAVED IN OUTPUT FOLDER FOR EASY ACCESS.
+
+set.seed(5)
+model_communism <-word2vec(x =communism$sentence_lowered,type ="cbow",dim =20,iter =200)
+
+write.word2vec(model_communism,"../output/word2vec_communism.bin")
+
+set.seed(5)
+model_capitalism <-word2vec(x =capitalism$sentence_lowered,type ="cbow",dim =20,iter =200)
+
+write.word2vec(model_capitalism,"../output/word2vec_capitalism.bin")
 ```
 
 ```{r}
-communism <- sentence.list.commcap %>% filter(school == "communism")
-all_communism_text <- paste(communism$sentence_str, collapse = " ")
-
-set.seed(123456789)
-model_communism <-word2vec(x =communism$sentence_str,type ="cbow",dim =25,iter =200)
-
-embedding <-as.matrix(model_communism)
-embedding <-predict(model_communism,c("money"),type ="embedding")
-embedding
-
-lookslike <-predict(model_communism,c("property"),type ="nearest",top_n =5)
-lookslike
+model_communism <-read.word2vec("../output/word2vec_communism.bin")
+model_capitalism <-read.word2vec("../output/word2vec_capitalism.bin")
 ```
 
-```{r}
-capitalism <- sentence.list.commcap %>% filter(school == "capitalism")
-all_capitalism_text <- paste(capitalism$sentence_str, collapse = " ")
-
-set.seed(123456789)
-model_capitalism <-word2vec(x =capitalism$sentence_str,type ="cbow",dim =25,iter =200)
-
-embedding <-as.matrix(model_capitalism)
-embedding <-predict(model_capitalism,c("money"),type ="embedding")
-embedding
-
-lookslike <-predict(model_capitalism,c("property"),type ="nearest",top_n =5)
-lookslike
-```
 
 ```{r, warning = F, message = F}
 draw_word_cloud <- function(word){
@@ -341,7 +426,7 @@ draw_word_cloud <- function(word){
              size =  lookslike_communism[[1]]$similarity*10000-min(lookslike_communism[[1]]$similarity)*10000,
              color=lookslike_communism[[1]]$similarity*10000-min(lookslike_communism[[1]]$similarity)*10000)) +
     geom_text_wordcloud_area() +
-    scale_size_area(max_size = 15)+
+    scale_size_area(max_size = 10)+
     theme_minimal()+
     scale_color_gradient(low = "orangered", high = "darkred")+
     ggtitle("Communism")+
@@ -352,14 +437,17 @@ draw_word_cloud <- function(word){
              size =  lookslike_capitalism[[1]]$similarity*10000-min(lookslike_capitalism[[1]]$similarity)*10000,
              color=lookslike_capitalism[[1]]$similarity*10000-min(lookslike_capitalism[[1]]$similarity)*10000)) +
     geom_text_wordcloud_area() +
-    scale_size_area(max_size = 15)+
+    scale_size_area(max_size = 10)+
     theme_minimal()+
     scale_color_gradient(low = "lightblue", high = "darkblue")+
     ggtitle("Capitalism")+
     theme(plot.title = element_text(hjust = 0.5))
   
 
-  arranged <- arrangeGrob(plot1, plot2, ncol=2, top = textGrob(paste("Words Used in Similar Contexts as '",word,"'", sep=""),gp=gpar(fontsize=20,font=1)), bottom = textGrob("Word size corresponds to similarity to the original word in the context of corresponding group.",gp=gpar(fontsize=10,font=1, alpha = 0.7)))
+  arranged <- arrangeGrob(plot1, plot2, ncol=2, top = textGrob(paste("Words Used in Similar Contexts as '",word,"'", sep=""),
+                                                               gp=gpar(fontsize=20,font=1)), 
+                          bottom = textGrob("Word size corresponds to similarity to the original word in the context of corresponding group.",
+                                            gp=gpar(fontsize=10,font=1, alpha = 0.7)))
   
   plot(arranged)
   ggsave(file=paste("../figs/words_similar_to_",word,".jpg",sep=""), arranged, width=7.29, height=4.5)
@@ -367,17 +455,13 @@ draw_word_cloud <- function(word){
 
 draw_word_cloud("property")
 draw_word_cloud("wages")
+draw_word_cloud("production")
 draw_word_cloud("taxes")
-
+draw_word_cloud("poor")
+draw_word_cloud("commerce")
 ```
 
 
-```{r}
-lookslike <-predict(model_communism,c("taxes"),type ="nearest",top_n =5)
-lookslike
-lookslike <-predict(model_capitalism,c("taxes"),type ="nearest",top_n =5)
-lookslike
-```
 
 
 ```{r}
