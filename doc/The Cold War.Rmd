@@ -1,9 +1,9 @@
 ---
-title: "Communism vs Capitalism"
+title: "The Cold War"
 author: "Varchasvi Vedula"
 output:
   prettydoc::html_pretty:
-    theme: architect
+    theme: tactile
     highlight: github
 ---
 
@@ -70,11 +70,19 @@ source("../lib/speechFuncs.R")
 ![Adam Smith and Karl Marx](logo.jpg){width=30%}
 </center>
 
-Throughout history, there have been developed many a political and socioeconomic framework to better the lives of those living within it. Of these, two schools have caught the attention of the world over the last few centuries, so much so that countries have gone to war over them - communism and capitalism. These frameworks are guided by the texts of those who formulated them over the years. These ideas are inherently philosophical, as they question the very meaning of society and what it means to be a part of it. To find out what these texts are talking about, let's analyze these philosophical text using the tools of Data Science and Natural Language Processing. We are interested in looking at what words these school are using, what topics they primarily discuss, and get a sense of how they feel about certain words.
+The term "Cold War" was first used by writer George Orwell to describe the tensions that developed after World War II between the United States and the Soviet Union. Tensions built up on all fronts and the two superpowers were on the brink of a nuclear disaster. But what really drove these behemoths to this state?
 
-Since Communism and Capitalism are such ubiquitous topics in real life, I am aware of some of the principles of the two regimes. This may be a potential bias in my analysis. However, for the integrity of the data-driven study, I will only claim what I see through data and acknowledge any contextual opinions along the way (prefaced by "Opinion:"). At the end, we will draw comparisons between what we found and what we know.
+On the forefront of these issues were ideological differences. The political and economic systems of the capitalistic USA and the communist Soviet Union were incompatible. But what really was so different between these two philosophies? Let's find out.
+
+
+The frameworks of communism and capitalism are guided by the texts of those who formulated them over the centuries. These have authors have proved that the pen is truly mightier than the sword as they penned the very blueprints of the societies we know and live in today. These socioeconomic frameworks are inherently philosophical, as they question the very meaning of society and what it means to be a part of it. To find out what they texts are talking about, let’s analyze these philosophical texts using the tools of Data Science and Natural Language Processing. We are interested in looking at the vernacular of these schools of thought, what topics they primarily discuss, and how they relate to certain terms. 
+
+
+*Disclaimer*: Since Communism and Capitalism are such ubiquitous topics in real life, we are aware of some of the principles of the two regimes. This may be a potential bias in our analysis. However, for the integrity of the data-driven study, we will only claim what we see through data and acknowledge any contextual opinions we may form along the way (prefaced by “Opinion:”). At the end, we will draw comparisons between what we found and what we know. Now, let's go.
+
 
 (Depicted in the figure above: Adam Smith (Capitalist) and Karl Marx (Communist))
+
 
 # Data Exploration
 
@@ -405,11 +413,11 @@ heatmap.2(as.matrix(topic.summary[,topic.plot+1]),
 
 ```
 
-The plot above gives us a very interesting story, building up on the frequency plot. It shows us the proportion of their text that each auther spends on each time. A darker rectangle implies that that author spends more time talking about that topic than a lighter rectangle. 
+The plot above gives us a very interesting story, building up on the frequency plot. It shows us the proportion of their text that each auther spends on each topic. A darker rectangle implies that that author spends more time talking about that topic than a lighter rectangle. 
 
 We notice that the communists (Marx and Lenin) spend more of their texts covering the topics of Production and Socioeconomics. On the other hand, the capitalists spend more of their texts covering more financially aggressive topics like Trade, Assets, Property, and Finance & Banking.
 
-It seems like communism focuses more on the people and their welfare (Time, Socioeconomics) alongside their economy (Production). The lack of discussion of Assests indicates potentially less involvement of the people in the exchange of Assets. Similarly, the lack of discussion of Politics suggests that it may be exclusive and not open to the public. We noticed that the topic of Politics also discusses class, further suggesting that class structure may not exist under communism.
+It seems like communism focuses more on the people and their welfare (Time, Socioeconomics) alongside their economy (Production). The lack of discussion of Assets indicates potentially less involvement of the people in the exchange of Assets. Similarly, the lack of discussion of Politics suggests that it may be exclusive and not open to the public. We noticed that the topic of Politics also discusses class, further suggesting that class structure may not exist under communism.
 
 In addition to financial topics, capitalism also discusses politics, unlike communism, suggesting that there may be more of an opportunity for the people to be involved in the government. The abundance of discussion of Assets and Property suggests a more open market under this regime.
 
@@ -535,22 +543,22 @@ We can not gather enough information from words similar to "commerce".
 
 ## Data-Driven Results
 
-So. Here's what we found simply by exploring the data.
+So. 
 
-1. Word Frequency Analysis
-    + Communist texts use a lot of words like "labour", "production", and "social" - a combination of economical and societal ideas.
-    + Capitalist texts use a lot of words like "labour", "money", and "land" - mainly economical asset-related words.
-    + This might be purely because of the nature of the topic. We got preliminary ideas about what to expect from further analysis.
-    
-2. Topic Modeling
-    + Communist authors tend to write more about the topics of "Socieconomics", "Production", and "Time".
-    + Capitalist authors tend to write more about the topics "Finance & Banking", "property", "Trade", "Politics", and "Assets".
-    + This does not give us information about their stances on these topics.
-    
-3. Similar Word Analysis
-    + Communism has "communal" views of "property". capitalism has "person"al views.
-    + Communism has an un-opinionated view of "wages". Capitalism uses "wages" closely with "profits".
-    + Capitalism tends to use "poor" alongside "unproductive" and "prodigal".
+Here's what we know about **Communist** texts purely from exploring the data.
+
++ Use a lot of words like "labour", "production", and "social" - a combination of economical and societal ideas.
++ Authors tend to write more about the topics of "Socieconomics", "Production", and "Time".
++ Have "communal" views of "property". 
++ Have an un-opinionated view of "wages"
+
+And here's what we know about **Capitalist** texts purely from exploring the data.
+
++ Use a lot of words like "labour", "money", and "land" - mainly economical asset-related words.
++ Authors tend to write more about the topics "Finance & Banking", "property", "Trade", "Politics", and "Assets".
++ Have "person"al views of "property"
++ Use the word "wages" closely with "profits".
++ Tend to use "poor" alongside "unproductive" and "prodigal".
     
 ## Background Knowledge
 
