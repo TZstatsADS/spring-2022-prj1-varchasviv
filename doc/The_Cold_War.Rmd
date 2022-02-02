@@ -67,7 +67,7 @@ source("../lib/speechFuncs.R")
 ```
 
 <center>
-![Adam Smith and Karl Marx](logo.jpg){width=30%}
+![Adam Smith and Karl Marx](logo.jpg){width=60%}
 </center>
 
 The term "Cold War" was first used by writer George Orwell to describe the tensions that developed after World War II between the United States and the Soviet Union. Tensions built up on all fronts and the two superpowers were on the brink of a nuclear disaster. But what really drove these behemoths to this state?
