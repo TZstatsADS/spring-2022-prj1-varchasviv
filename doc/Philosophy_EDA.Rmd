@@ -306,11 +306,11 @@ lookslike <-predict(model_capitalism,c("property"),type ="nearest",top_n =5)
 lookslike
 ```
 
-```{r}
+```{r, warning = F, message = F}
 draw_word_cloud <- function(word){
   par(mfrow=c(1,2), mar = c(0,0,0,0))
-  lookslike_communism <-predict(model_communism,c("property"),type ="nearest",top_n =20)
-  lookslike_capitalism <-predict(model_capitalism,c("property"),type ="nearest",top_n =20)
+  lookslike_communism <-predict(model_communism,c(word),type ="nearest",top_n =20)
+  lookslike_capitalism <-predict(model_capitalism,c(word),type ="nearest",top_n =20)
   
   plot1 <- ggplot(lookslike_communism[[1]], 
          aes(label = term2,
@@ -335,30 +335,17 @@ draw_word_cloud <- function(word){
     theme(plot.title = element_text(hjust = 0.5))
   
 
-  grid.arrange(plot1, plot2, ncol=2, top = textGrob(paste("Word:",word),gp=gpar(fontsize=20,font=1)))
+  arranged <- arrangeGrob(plot1, plot2, ncol=2, top = textGrob(paste("Words Used in Similar Contexts as '",word,"'", sep=""),gp=gpar(fontsize=20,font=1)), bottom = textGrob("Word size corresponds to similarity to the original word in the context of corresponding group.",gp=gpar(fontsize=10,font=1, alpha = 0.7)))
+  plot(arranged)
+  ggsave(file=paste("../figs/words_similar_to_",word,".jpg",sep=""), arranged)
 }
 
 draw_word_cloud("property")
-
-
+draw_word_cloud("wages")
+draw_word_cloud("taxes")
 
 ```
 
-
-```{r}
-lookslike <-predict(model_communism,c("property"),type ="nearest",top_n =20)
-lookslike
-lookslike <-predict(model_capitalism,c("property"),type ="nearest",top_n =50)
-lookslike
-```
-
-
-```{r}
-lookslike <-predict(model_communism,c("wages"),type ="nearest",top_n =5)
-lookslike
-lookslike <-predict(model_capitalism,c("wages"),type ="nearest",top_n =5)
-lookslike
-```
 
 ```{r}
 lookslike <-predict(model_communism,c("taxes"),type ="nearest",top_n =5)
