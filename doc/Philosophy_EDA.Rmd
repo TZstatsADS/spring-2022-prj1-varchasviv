@@ -11,7 +11,7 @@ output:
 knitr::opts_chunk$set(echo=F)
 knitr::opts_chunk$set(warning=F)
 knitr::opts_chunk$set(message=F)
-#knitr::opts_chunk$set(comment=NA)
+knitr::opts_chunk$set(comment=NA)
 ```
 
 
@@ -25,7 +25,7 @@ packages.used=c("rvest", "tibble",
                 "RANN", "topicmodels", "stringr","plyr","knitr",
                 "word2vec","ggwordcloud","gridExtra","grid","wordcloud",
                 "tidytext","prettydoc", "DT")
-# check packages that need to be installed.
+# Check for packages that need to be installed.
 packages.needed=setdiff(packages.used, 
                         intersect(installed.packages()[,1], 
                                   packages.used))
@@ -60,6 +60,7 @@ library("wordcloud")
 library("tidytext")
 library("prettydoc")
 library("DT")
+
 
 source("../lib/plotstacked.R")
 source("../lib/speechFuncs.R")
@@ -105,7 +106,7 @@ rownames(commcap_books) <- NULL
 datatable(commcap_books, rownames = FALSE, filter="top", options = list(pageLength = 6, scrollX=T) )
 ```
 
-We've got 3 books from each school!
+We've got 3 books from each school! Our communism authors are Marx and Lenin, while our capitalism authors are Smith, Keynes, and Ricardo.
 
 ```{r}
 # Subsetting Data from Communism and Capitalism Books
@@ -160,11 +161,14 @@ freq_plot_communism <- ggplot(communism_text_wordcounts_top_10, aes(x = reorder(
 freq_plot_capitalism <- ggplot(capitalism_text_wordcounts_top_10, aes(x = reorder(word, -n), y = n)) + geom_bar(stat = "identity",fill="darkblue")+ xlab("Word") + ylab("Frequency") + ggtitle("Top 10 Most Frequent Words in Capitalism")+theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ylim(c(0,3500))+ theme(plot.title = element_text(size = 11))
 grid.arrange(freq_plot_communism, freq_plot_capitalism, ncol=2)
 ```
+
 The plot above shows the top 10 most common words in books on communism and capitalism respectively. Both schools seem to use words related to money and manufacturing. However, communism includes a few words related to society while capitalism includes words related to the financial market. While it's hard to infer much from 10 words alone, this gives us a preliminary idea of what to expect from a deeper dive.
 
 # Topic Modeling
 
 Let's check out what some of the topics these books discuss are! To do this, we use a statistical model called Latent Dirichlet Allocation. This model attempts to capture the themes discussed across these texts by looking at the co-occurrence of words within and across texts. We try to find 8 latent topics from these texts.
+
+We must note that LDA is a bag-of-words model, meaning that it only looks at the occurrence of words, not their order. This means that sentence structure is not modeled, leading to potentially missing contextual information. Moreover, we must manually choose how many topics to look for, which may not be equal to the actual number of topics there are in the data set. These are potential biases we must be aware of.
 
 ```{r}
 # Preparing for Corpus for Latent Dirichlet Allocation
@@ -176,9 +180,6 @@ corpus.list$snipets=paste(sentence.pre, corpus.list$sentence_str, sentence.post,
 rm.rows=(1:nrow(corpus.list))[corpus.list$sent.id==1]
 rm.rows=c(rm.rows, rm.rows-1)
 corpus.list=corpus.list[-rm.rows, ]
-
-# Creating Corpus
-docs <- Corpus(VectorSource(corpus.list$snipets))
 ```
 
 ## Text Pre-Processing
@@ -190,9 +191,12 @@ While it may seem excessive, all of this is done in order to extract the most me
 ```{r, warning = F, message=F}
 # Adapted from <https://eight2late.wordpress.com/2015/09/29/a-gentle-introduction-to-topic-modeling-using-r/>.
 
+# Creating Corpus
+docs <- Corpus(VectorSource(corpus.list$snipets))
+
 # Data Cleaning to Avoid Triviality and Redundancy
 
-set.seed(1)
+set.seed(2)
 index <- sample(1:nrow(corpus.list), 1)
 
 print("Sample sentence:")
@@ -321,7 +325,7 @@ load("../output/LDAGibbs_8_TopicsToTerms")
 load("../output/LDAGibbs_8_TopicProbabilities")
 ```
 
-The model identifies the 8 following unlabeled topics across both schools. For each topic, we list a combination of the most popular and salient terms.
+The model identifies the 8 following unlabeled topics across both schools. For each topic, we list a combination of the most popular and salient terms. Looking at these terms, I manually assigned labels for each topic (shown in the table below)
 
 ```{r}
 # Computing Most Salient and Most Popular Terms by Topic
@@ -337,10 +341,13 @@ for(i in 1:k){
 }
 #t(topics.terms)
 #ldaOut.terms
+display_terms <- rbind(t(topics.terms),ldaOut.terms)
+colnames(display_terms) <- paste(paste(rep("Topic", 8), 1:8, rep(":", 8)), c("Production","Politics","Trade","Finance & Banking","Property","Assets","Socioeconomics","Time"), sep="")
 
-
-datatable(rbind(t(topics.terms),ldaOut.terms), rownames = FALSE, filter="top", options = list(pageLength = 15, scrollX=T) )
+datatable(display_terms, rownames = FALSE, filter="top", options = list(pageLength = 15, scrollX=T) )
 ```
+
+Now that we know the main topics discussed in these books, let's find out which author talks about which topic the most. We use a technique called clustering.
 
 ```{r}
 # Preparing for Clustering
@@ -379,7 +386,7 @@ jpeg(file = "../output/heatmap_author_by_topic.jpeg")
 # Code
 heatmap.2(as.matrix(topic.summary[,topic.plot+1]), 
           scale = "column", key=F, 
-          col = bluered(100),
+          col = colorpanel(100, "white", "lightgreen", "darkgreen"),
           cexRow = 1, cexCol = 1, margins = c(8,8),
           trace = "none", density.info = "none",
           main = "Heatmap of Topics by Author")
@@ -389,13 +396,22 @@ trash <- dev.off()
 
 heatmap.2(as.matrix(topic.summary[,topic.plot+1]), 
           scale = "column", key=F, 
-          col = bluered(100),
+          col = colorpanel(100, low="white",  high="darkgreen"),
           cexRow = 1, cexCol = 1, margins = c(8,8),
           trace = "none", density.info = "none",
-          main = "Heatmap of Topics by Author")
+          main = "Heatmap of Topics-Stronger is Darker")
 
 ```
 
+The plot above gives us a very interesting story, building up on the frequency plot. It shows us the proportion of their text that each auther spends on each time. A darker rectangle implies that that author spends more time talking about that topic than a lighter rectangle. 
+
+We notice that the communists (Marx and Lenin) spend more of their texts covering the topics of Production and Socioeconomics. On the other hand, the capitalists spend more of their texts covering more financially aggressive topics like Trade, Assets, Property, and Finance & Banking.
+
+It seems like communism focuses more on the people and their welfare (Time, Socioeconomics) alongside their economy (Production). The lack of discussion of Assests indicates potentially less involvement of the people in the exchange of Assets. Similarly, the lack of discussion of Politics suggests that it may be exclusive and not open to the public. We noticed that the topic of Politics also discusses class, further suggesting that class structure may not exist under communism.
+
+In addition to financial topics, capitalism also discusses politics, unlike communism, suggesting that there may be more of an opportunity for the people to be involved in the government. The abundance of discussion of Assets and Property suggests a more open market under this regime.
+
+At this stage, all we know if whether or not certain authors discuss certain topics - we do not know if they are inclined one way or another. We are purely making an educated guess. To understand whether or not the authors are pro or anti the topics they talk about, we will conduct the following analysis.
 
 ```{r, eval = F}
 # WARNING: TIME INTENSIVE CHUNK. DO NOT RUN THIS CHUNK FOR EVALUATION
@@ -462,25 +478,5 @@ draw_word_cloud("production")
 draw_word_cloud("taxes")
 draw_word_cloud("poor")
 draw_word_cloud("commerce")
-```
-
-
-
-
-```{r}
-my_word <- "community"
-lookslike <-predict(model_communism,my_word,type ="nearest",top_n =5)
-lookslike
-lookslike <-predict(model_capitalism,my_word,type ="nearest",top_n =5)
-lookslike
-```
-
-
-```{r}
-my_word <- "intervention"
-lookslike <-predict(model_communism,my_word,type ="nearest",top_n =5)
-lookslike
-lookslike <-predict(model_capitalism,my_word,type ="nearest",top_n =5)
-lookslike
 ```
 
