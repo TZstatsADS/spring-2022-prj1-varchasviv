@@ -72,6 +72,8 @@ source("../lib/speechFuncs.R")
 
 Throughout history, there have been developed many a political and socioeconomic framework to better the lives of those living within it. Of these, two schools have caught the attention of the world over the last few centuries, so much so that countries have gone to war over them - communism and capitalism. These frameworks are guided by the texts of those who formulated them over the years. These ideas are inherently philosophical, as they question the very meaning of society and what it means to be a part of it. To find out what these texts are talking about, let's analyze these philosophical text using the tools of Data Science and Natural Language Processing. We are interested in looking at what words these school are using, what topics they primarily discuss, and get a sense of how they feel about certain words.
 
+Since Communism and Capitalism are such ubiquitous topics in real life, I am aware of some of the principles of the two regimes. This may be a potential bias in my analysis. However, for the integrity of the data-driven study, I will only claim what I see through data and acknowledge any contextual opinions along the way (prefaced by "Opinion:"). At the end, we will draw comparisons between what we found and what we know.
+
 (Depicted in the figure above: Adam Smith (Capitalist) and Karl Marx (Communist))
 
 # Data Exploration
@@ -128,7 +130,7 @@ my.add.index <- function(df){
 sentence.list.commcap <- ddply(sentence.list.commcap,.(title),my.add.index)
 ```
 
-## Word Use Statistics
+## Word Frequency Analysis
 
 We are interested in seeing what is going on in these books. So, let's look at the kinds of words the communism books use versus those the capitalist books are using.
 
@@ -399,7 +401,7 @@ heatmap.2(as.matrix(topic.summary[,topic.plot+1]),
           col = colorpanel(100, low="white",  high="darkgreen"),
           cexRow = 1, cexCol = 1, margins = c(8,8),
           trace = "none", density.info = "none",
-          main = "Heatmap of Topics-Stronger is Darker")
+          main = "Heatmap of Topics-Darker is Stronger")
 
 ```
 
@@ -412,6 +414,20 @@ It seems like communism focuses more on the people and their welfare (Time, Soci
 In addition to financial topics, capitalism also discusses politics, unlike communism, suggesting that there may be more of an opportunity for the people to be involved in the government. The abundance of discussion of Assets and Property suggests a more open market under this regime.
 
 At this stage, all we know if whether or not certain authors discuss certain topics - we do not know if they are inclined one way or another. We are purely making an educated guess. To understand whether or not the authors are pro or anti the topics they talk about, we will conduct the following analysis.
+
+# Similar Word Analysis
+
+To fix the shortcomings of our previous step, we take the following approach. We create a model that takes a word as an input and returns other words used most similarly to our original word in the data set. This is helpful for two reasons:
+
+1. We get to infer the authors' opinions on the word
+
+2. We get to compare these opinions Communism vs Capitalism (over the same word)
+
+To achieve this, we use a model called word2vec. Word2vec essentially assigns a set of numbers to each word in the data set. Words that are closer (have similar numbers) are used in similar contexts. We will train separate word2vec models for communism texts and capitalism texts.
+
+We will use word clouds to represent word most similar to our given word. The bigger the word, the more similar it is to our original word.
+
+One drawback of this method is that the similar words might not really make much sense in context of the original word. This may occur because the algorithm did not converge.
 
 ```{r, eval = F}
 # WARNING: TIME INTENSIVE CHUNK. DO NOT RUN THIS CHUNK FOR EVALUATION
@@ -471,12 +487,91 @@ draw_word_cloud <- function(word){
   plot(arranged)
   ggsave(file=paste("../figs/words_similar_to_",word,".jpg",sep=""), arranged, width=7.29, height=4.5)
 }
+```
 
+```{r}
 draw_word_cloud("property")
+```
+
+Since we noticed that property was discussed in particularly different extents between the two schools, let's start with that. Immediately, we see that some of our suspicions were true. Based on the texts from communism, some of the most related words to "property" are "community", "common", and "society". 
+
+Opinion: This may imply that property is be communal, owned by the state.
+
+On the other hand, we see that under capitalism, "property" is similar to "persons", "revenue", and "class", suggesting individual ownership of property (and "revenue" suggesting renting property out for profit).
+
+```{r}
 draw_word_cloud("wages")
+```
+
+Looking at the text from communism, we see a typical set of words you would expect to be similar to "wages" - a "weekly" "rate", likely stabilized by the government for the whole community's welfare. Under capitalism, we see an emphasis on "profits", suggesting opportunity for business and an individual's own welfare.
+
+```{r}
 draw_word_cloud("production")
+```
+
+The word "production" does not seem to have very sensible similar words. This might be a drawback of the word2vec model. Under Capitalism, however, there seems to be an indication that "production" is "elastic", influenced by "supply", "consumption", and "growth" - signs of a free market. We do see that "centralisation" is similar to "property" under Communism, but it's only one out of many words and we should refrain from hastening to a conclusion there.
+
+```{r}
 draw_word_cloud("taxes")
+```
+
+For "taxes", the similar words are inconclusive. We are unable to gather more information about the two schools' tendencies regarding "taxes".
+
+```{r}
 draw_word_cloud("poor")
+```
+
+Under Communism, the words similar to "poor" are mild, describing a poor person ("tenant", "poverty", "miserable"). However, Capitalism seems to be harsh in its opinion of "poor". Words such as "unproductive", "prodigal", and "servants" seem to link being "poor" to being inadequate in terms of wealth management and decision making. 
+
+Opinion: This may suggest that lack of money is not respected in this framework, even though it might be this framework itself leading some people to this situation.
+
+```{r}
 draw_word_cloud("commerce")
 ```
+
+We can not gather enough information from words similar to "commerce".
+
+# Discussion
+
+## Data-Driven Results
+
+So. Here's what we found simply by exploring the data.
+
+1. Word Frequency Analysis
+    + Communist texts use a lot of words like "labour", "production", and "social" - a combination of economical and societal ideas.
+    + Capitalist texts use a lot of words like "labour", "money", and "land" - mainly economical asset-related words.
+    + This might be purely because of the nature of the topic. We got preliminary ideas about what to expect from further analysis.
+    
+2. Topic Modeling
+    + Communist authors tend to write more about the topics of "Socieconomics", "Production", and "Time".
+    + Capitalist authors tend to write more about the topics "Finance & Banking", "property", "Trade", "Politics", and "Assets".
+    + This does not give us information about their stances on these topics.
+    
+3. Similar Word Analysis
+    + Communism has "communal" views of "property". capitalism has "person"al views.
+    + Communism has an un-opinionated view of "wages". Capitalism uses "wages" closely with "profits".
+    + Capitalism tends to use "poor" alongside "unproductive" and "prodigal".
+    
+## Background Knowledge
+
+In reality, we actually know a lot about the ideals of Communism and Capitalism. 
+
+1. Communism
+    + has state-owned property
+    + has no free market
+    + distributes wealth equally
+    + does not have social classes
+    + focuses of the whole community's welfare
+    
+2. Capitalism
+
+    + allows personal ownership of property
+    + operates on a free market
+    + supposedly distributes wealth based on a measure of "effort" - unequal distribution
+    + has class distinctions
+    + has an individualistic view of welfare
+    
+# Conclusion
+
+So, it turns out that the data spoke correctly! Even when we were careful to avoid confirmation bias, the data seemed to support a lot of the truth about Communism and Capitalism. This goes on to demonstrate the power of data science and natural language processing.
 
