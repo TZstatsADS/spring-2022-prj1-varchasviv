@@ -8,7 +8,7 @@ packages.used=c("rvest", "tibble",
                 "sentimentr", "gplots", "dplyr",
                 "tm", "syuzhet", "factoextra", 
                 "beeswarm", "scales", "RColorBrewer",
-                "RANN", "topicmodels", "stringr","plyr")
+                "RANN", "topicmodels", "stringr","plyr","")
 # check packages that need to be installed.
 packages.needed=setdiff(packages.used, 
                         intersect(installed.packages()[,1], 
@@ -68,15 +68,15 @@ my.add.index <- function(df){
   df$sent.id <- 1:nrow(df)
   return(df)
 }
-sentence.list <- ddply(sentence.list,.(title),my.add.index)
+sentence.list.commcap <- ddply(sentence.list.commcap,.(title),my.add.index)
 ```
 
 
 ```{r}
-corpus.list=sentence.list[2:(nrow(sentence.list)-1), ]
-sentence.pre=sentence.list$sentence_str[1:(nrow(sentence.list)-2)]
-sentence.post=sentence.list$sentence_str[3:(nrow(sentence.list)-1)]
-corpus.list$snipets=paste(sentence.pre, corpus.list$sentences, sentence.post, sep=" ")
+corpus.list=sentence.list.commcap[2:(nrow(sentence.list.commcap)-1), ]
+sentence.pre=sentence.list.commcap$sentence_str[1:(nrow(sentence.list.commcap)-2)]
+sentence.post=sentence.list.commcap$sentence_str[3:(nrow(sentence.list.commcap)-1)]
+corpus.list$snipets=paste(sentence.pre, corpus.list$sentence_str, sentence.post, sep=" ")
 rm.rows=(1:nrow(corpus.list))[corpus.list$sent.id==1]
 rm.rows=c(rm.rows, rm.rows-1)
 corpus.list=corpus.list[-rm.rows, ]
@@ -85,41 +85,52 @@ corpus.list=corpus.list[-rm.rows, ]
 ## Text mining
 ```{r}
 docs <- Corpus(VectorSource(corpus.list$snipets))
-writeLines(as.character(docs[[sample(1:nrow(corpus.list), 1)]]))
 ```
 
 ### Text basic processing
 Adapted from <https://eight2late.wordpress.com/2015/09/29/a-gentle-introduction-to-topic-modeling-using-r/>.
 
-```{r}
+```{r, warning = F, message=F}
+set.seed(1)
+index <- sample(1:nrow(corpus.list), 1)
+
+print("Sample sentence:")
+writeLines(as.character(docs[[index]]))
+
+print("After converting to lower case:")
 #remove potentially problematic symbols
 docs <-tm_map(docs,content_transformer(tolower))
-writeLines(as.character(docs[[sample(1:nrow(corpus.list), 1)]]))
+writeLines(as.character(docs[[index]]))
 
+print("After removing punctuation:")
 #remove punctuation
 docs <- tm_map(docs, removePunctuation)
-writeLines(as.character(docs[[sample(1:nrow(corpus.list), 1)]]))
+writeLines(as.character(docs[[index]]))
 
+print("After removing numbers:")
 #Strip digits
 docs <- tm_map(docs, removeNumbers)
-writeLines(as.character(docs[[sample(1:nrow(corpus.list), 1)]]))
+writeLines(as.character(docs[[index]]))
 
+print("After removing stopwords:")
 #remove stopwords
 docs <- tm_map(docs, removeWords, stopwords("english"))
-writeLines(as.character(docs[[sample(1:nrow(corpus.list), 1)]]))
+writeLines(as.character(docs[[index]]))
 
+print("After removing whitespace:")
 #remove whitespace
 docs <- tm_map(docs, stripWhitespace)
-writeLines(as.character(docs[[sample(1:nrow(corpus.list), 1)]]))
+writeLines(as.character(docs[[index]]))
 
+print("After stemming:")
 #Stem document
 docs <- tm_map(docs,stemDocument)
-writeLines(as.character(docs[[sample(1:nrow(corpus.list), 1)]]))
+writeLines(as.character(docs[[index]]))
 ```
 
 ### Topic modeling
 
-Gengerate document-term matrices. 
+Generate document-term matrices. 
 
 ```{r}
 dtm <- DocumentTermMatrix(docs)
@@ -129,15 +140,15 @@ rownames(dtm) <- paste(corpus.list$author, corpus.list$title,
 
 #Find the sum of words in each Document
 rowTotals <- rep(NA, nrow(dtm))
-
-start_time <- Sys.time()
-rowTotals <- apply(dtm[1:10000,],1,sum)
-end_time <- Sys.time()
-end_time - start_time
-
-
-for (i in 1:nrow(dtm)){
-  rowTotals[i] <- sum(dtm[i,])
+for (i in 1:(nrow(dtm)%/%5000+1)){
+  
+  if(i!=(nrow(dtm)%/%5000+1)){
+    rowTotals[(5000*(i-1)+1):(5000*i)] <- apply(dtm[(5000*(i-1)+1):(5000*i),],1,sum)
+  }
+  else{
+    rowTotals[(5000*(i-1)+1):nrow(dtm)] <- apply(dtm[(5000*(i-1)+1):nrow(dtm),],1,sum)
+  }
+  
 }
 
 dtm  <- dtm[rowTotals> 0, ]
@@ -168,15 +179,15 @@ ldaOut <-LDA(dtm, k, method="Gibbs", control=list(nstart=nstart,
 #docs to topics
 ldaOut.topics <- as.matrix(topics(ldaOut))
 table(c(1:k, ldaOut.topics))
-write.csv(ldaOut.topics,file=paste("../out/LDAGibbs",k,"DocsToTopics.csv"))
+write.csv(ldaOut.topics,file=paste("../output/LDAGibbs",k,"DocsToTopics.csv", sep="_"))
 
-#top 6 terms in each topic
-ldaOut.terms <- as.matrix(terms(ldaOut,20))
-write.csv(ldaOut.terms,file=paste("../out/LDAGibbs",k,"TopicsToTerms.csv"))
+#top 8 terms in each topic
+ldaOut.terms <- as.matrix(terms(ldaOut,8))
+write.csv(ldaOut.terms,file=paste("../output/LDAGibbs",k,"TopicsToTerms.csv", sep="_"))
 
 #probabilities associated with each topic assignment
 topicProbabilities <- as.data.frame(ldaOut@gamma)
-write.csv(topicProbabilities,file=paste("../out/LDAGibbs",k,"TopicProbabilities.csv"))
+write.csv(topicProbabilities,file=paste("../output/LDAGibbs",k,"TopicProbabilities.csv", sep="_"))
 ```
 
 
