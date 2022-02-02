@@ -158,7 +158,9 @@ corpus.list=corpus.list[rowTotals>0, ]
 
 Run LDA
 
-```{r}
+```{r, eval=F}
+# DO NOT RUN FOR EVALUATION. THE REQUIRED OUTPUTS ARE SAVED AS CSV FILES FOR EASY ACCESS.
+
 #Set parameters for Gibbs sampling
 burnin <- 4000
 iter <- 2000
